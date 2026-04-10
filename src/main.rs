@@ -1,7 +1,7 @@
 mod executor;
 
 use axum::{
-    Json, Router, routing::{post}
+    Json, Router, http::StatusCode, routing::post
 };
 use tokio::net::TcpListener;
 use std::{net::SocketAddr};
@@ -29,6 +29,6 @@ async fn io_tester_endpoint(Json(params): Json<IoParams>) -> axum::response::Res
 
     match result {
         Ok(output) => Ok(Json(output)),
-        Err(e) => Err(e.to_string().into()),
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into()),
     }
 }

@@ -1,7 +1,7 @@
 
 use std::{hash::{DefaultHasher, Hash, Hasher}, path::{Path, PathBuf}};
 
-use anyhow::anyhow;
+use anyhow::{anyhow, bail};
 use serde::Deserialize;
 use tokio::{fs::{OpenOptions, create_dir_all, remove_dir_all}, io::AsyncWriteExt, process::Command};
 
