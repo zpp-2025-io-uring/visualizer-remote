@@ -1,9 +1,7 @@
-use std::{pin::Pin, process::{ExitStatus, Output, Stdio}};
-
-use anyhow::anyhow;
+use std::process::{ExitStatus, Stdio};
 
 use serde::Serialize;
-use tokio::{io, process::{Child, Command}};
+use tokio::process::{Child, Command};
 
 #[derive(Debug)]
 pub struct ProcessHandle(Child);
@@ -17,7 +15,12 @@ pub struct CmdOutput {
 
 impl ProcessHandle {
     pub async fn start(command: &mut Command) -> anyhow::Result<ProcessHandle> {
-        Ok(ProcessHandle(command.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn()?))
+        Ok(ProcessHandle(
+            command
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()?,
+        ))
     }
 
     pub async fn wait(self) -> anyhow::Result<CmdOutput> {

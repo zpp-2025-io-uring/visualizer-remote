@@ -1,11 +1,17 @@
+use std::{
+    hash::{DefaultHasher, Hash, Hasher},
+    path::PathBuf,
+};
 
-use std::{hash::{DefaultHasher, Hash, Hasher}, path::{Path, PathBuf}};
-
-use anyhow::{anyhow, bail};
+use anyhow::anyhow;
 use serde::Deserialize;
-use tokio::{fs::{OpenOptions, create_dir_all, remove_dir_all}, io::AsyncWriteExt, process::Command};
+use tokio::{
+    fs::{OpenOptions, create_dir_all},
+    io::AsyncWriteExt,
+    process::Command,
+};
 
-use crate::executor::cmd::{CmdOutput, ProcessHandle};
+use crate::executor::cmd::ProcessHandle;
 
 #[derive(Debug, Hash, Deserialize)]
 pub struct IoParams {
@@ -32,18 +38,35 @@ pub async fn run_io(params: IoParams) -> anyhow::Result<ProcessHandle> {
 
     create_dir_all(&storage_dir).await?;
 
-    let mut conf = OpenOptions::new().create(true).write(true).open(&config_path).await?;
+    let mut conf = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .open(&config_path)
+        .await?;
     conf.write_all(params.config.as_bytes()).await?;
 
-    let mut args: Vec<&str> = vec!["--conf", config_path.to_str().ok_or(anyhow!("invalid config path"))?, "--storage", storage_dir.to_str().ok_or(anyhow!("invalid storage dir"))?, "--reactor-backend", &params.backend, "--cpuset", &params.app_cpuset];
+    let mut args: Vec<&str> = vec![
+        "--conf",
+        config_path.to_str().ok_or(anyhow!("invalid config path"))?,
+        "--storage",
+        storage_dir.to_str().ok_or(anyhow!("invalid storage dir"))?,
+        "--reactor-backend",
+        &params.backend,
+        "--cpuset",
+        &params.app_cpuset,
+    ];
 
     if let Some(ref worker_cpuset) = params.async_worker_cpuset {
-        args.extend_from_slice(&["--async-workers-cpuset", &worker_cpuset]);
+        args.extend_from_slice(&["--async-workers-cpuset", worker_cpuset]);
     }
 
-
-    let result = ProcessHandle::start(Command::new("/home/jakub/Documents/ZPP/zpp-io-uring/seastar/build/release/apps/io_tester/io_tester").args(args)).await?;
+    let result = ProcessHandle::start(
+        Command::new(
+            "/home/jakub/Documents/ZPP/zpp-io-uring/seastar/build/release/apps/io_tester/io_tester",
+        )
+        .args(args),
+    )
+    .await?;
 
     Ok(result)
 }
-
