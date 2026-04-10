@@ -63,7 +63,7 @@ pub async fn run_io(params: IoParams) -> anyhow::Result<ProcessHandle> {
 
     let result = ProcessHandle::start(
         Command::new(
-            "/home/jakub/Documents/ZPP/zpp-io-uring/seastar/build/release/apps/io_tester/io_tester",
+            "io_tester",
         )
         .args(args),
     )

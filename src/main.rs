@@ -59,7 +59,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/poll", post(poll_endpoint))
         .with_state(Arc::new(App::new()));
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3001));
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     let listener = TcpListener::bind(addr).await?;
 
     axum::serve(listener, app).await?;

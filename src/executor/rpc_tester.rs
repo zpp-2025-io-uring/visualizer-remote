@@ -18,6 +18,7 @@ pub struct RpcParams {
     config: String,
     backend: String,
     ip_address: String,
+    port: String,
     is_server: bool,
     app_cpuset: String,
     async_worker_cpuset: Option<String>,
@@ -51,6 +52,8 @@ pub async fn run_rpc(params: RpcParams) -> anyhow::Result<ProcessHandle> {
         &params.backend,
         "--cpuset",
         &params.app_cpuset,
+        "--port",
+        &params.port
     ];
 
     if params.is_server {
@@ -63,7 +66,7 @@ pub async fn run_rpc(params: RpcParams) -> anyhow::Result<ProcessHandle> {
         args.extend_from_slice(&["--async-workers-cpuset", worker_cpuset]);
     }
 
-    let result = ProcessHandle::start(Command::new("/home/jakub/Documents/ZPP/zpp-io-uring/seastar/build/release/apps/rpc_tester/rpc_tester").args(args)).await?;
+    let result = ProcessHandle::start(Command::new("rpc_tester").args(args)).await?;
 
     Ok(result)
 }
