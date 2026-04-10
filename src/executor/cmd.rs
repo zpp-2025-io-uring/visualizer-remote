@@ -1,7 +1,11 @@
+use std::{pin::Pin, process::Output};
+
 use anyhow::anyhow;
 
 use serde::Serialize;
-use tokio::process::Command;
+use tokio::{io, process::{Child, Command}};
+
+pub struct ProcessHandle(Child);
 
 #[derive(Debug, Serialize)]
 pub struct CmdOutput {
@@ -10,12 +14,26 @@ pub struct CmdOutput {
     pub return_code: i32,
 }
 
-pub async fn run_command(command: &mut Command) -> anyhow::Result<CmdOutput> {
-    let command = command.output().await?;
+impl ProcessHandle {
+    pub async fn start(command: &mut Command) -> anyhow::Result<ProcessHandle> {
+        Ok(ProcessHandle(command.spawn()?))
+    }
 
-    Ok(CmdOutput {
-        stdout: command.stdout.try_into()?,
-        stderr: command.stderr.try_into()?,
-        return_code: command.status.code().ok_or(anyhow!("Unknown return code"))?,
-    })
+    pub async fn wait(self) -> anyhow::Result<CmdOutput> {
+        let output = self.0.wait_with_output().await?;
+
+        Ok(CmdOutput {
+            stdout: output.stdout.try_into()?,
+            stderr: output.stderr.try_into()?,
+            return_code: output.status.code().ok_or(anyhow!("Unknown return code"))?,
+        })
+    }
+
+    pub async fn kill(mut self) -> anyhow::Result<()> {
+        Ok(self.0.kill().await?)
+    }
+
+    pub async fn terminate(self) -> anyhow::Result<()> {
+        self.kill().await // SIGTERM not available, fallback to SIGKILL
+    }
 }

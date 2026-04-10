@@ -5,7 +5,7 @@ use anyhow::{anyhow, bail};
 use serde::Deserialize;
 use tokio::{fs::{OpenOptions, create_dir_all, remove_dir_all}, io::AsyncWriteExt, process::Command};
 
-use crate::executor::cmd::{CmdOutput, run_command};
+use crate::executor::cmd::{CmdOutput, ProcessHandle};
 
 #[derive(Debug, Hash, Deserialize)]
 pub struct IoParams {
@@ -18,7 +18,7 @@ pub struct IoParams {
 const CONFIG_FILENAME: &str = "conf.yaml";
 const STORAGE_DIR: &str = "storage";
 
-pub async fn run_io(params: IoParams) -> anyhow::Result<CmdOutput> {
+pub async fn run_io(params: IoParams) -> anyhow::Result<ProcessHandle> {
     println!("Running with {:?}", params);
     let mut hasher = DefaultHasher::new();
     params.hash(&mut hasher);
@@ -42,10 +42,10 @@ pub async fn run_io(params: IoParams) -> anyhow::Result<CmdOutput> {
     }
 
 
-    let result = run_command(Command::new("/home/jakub/Documents/ZPP/zpp-io-uring/seastar/build/release/apps/io_tester/io_tester").args(args)).await;
+    let result = ProcessHandle::start(Command::new("").args(args)).await?;
 
     remove_dir_all(work_dir).await?;
 
-    result
+    Ok(result)
 }
 
