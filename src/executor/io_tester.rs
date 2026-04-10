@@ -19,6 +19,7 @@ const CONFIG_FILENAME: &str = "conf.yaml";
 const STORAGE_DIR: &str = "storage";
 
 pub async fn run_io(params: IoParams) -> anyhow::Result<CmdOutput> {
+    println!("Running with {:?}", params);
     let mut hasher = DefaultHasher::new();
     params.hash(&mut hasher);
     let hash = hasher.finish();
@@ -41,7 +42,7 @@ pub async fn run_io(params: IoParams) -> anyhow::Result<CmdOutput> {
     }
 
 
-    let result = run_command(Command::new("echo").args(args)).await;
+    let result = run_command(Command::new("/home/jakub/Documents/ZPP/zpp-io-uring/seastar/build/release/apps/io_tester/io_tester").args(args)).await;
 
     remove_dir_all(work_dir).await?;
 
