@@ -33,7 +33,7 @@ impl App {
         Ok(pid)
     }
 
-    pub async fn get_process(&self, pid: &Pid) -> anyhow::Result<ProcessHandle> {
+    pub async fn remove_process(&self, pid: &Pid) -> anyhow::Result<ProcessHandle> {
         self.processes.lock().await.remove(&pid).ok_or(anyhow!("non existant pid"))
     }
 }
@@ -69,7 +69,7 @@ async fn io_tester_endpoint(State(state): State<Arc<App>> ,Json(params): Json<Io
 }
 
 async fn handle_wait_and_output_endpoint(app: &App, pid: Pid) -> anyhow::Result<CmdOutput> {
-    app.get_process(&pid).await?.wait().await
+    app.remove_process(&pid).await?.wait().await
 }
 
 async fn wait_and_output_endpoint(State(state): State<Arc<App>>, Json(pid): Json<Pid>) -> axum::response::Result<Json<CmdOutput>> {
@@ -80,7 +80,9 @@ async fn wait_and_output_endpoint(State(state): State<Arc<App>>, Json(pid): Json
 }
 
 async fn handle_kill_endpoint(app: &App, pid: Pid) -> anyhow::Result<()> {
-    app.get_process(&pid).await?.kill().await
+    let mut processes = app.processes.lock().await;
+    let handle = processes.get_mut(&pid).ok_or(anyhow!("non existant pid"))?;
+    handle.kill().await
 }
 
 async fn kill_endpoint(State(state): State<Arc<App>>, Json(pid): Json<Pid>) -> axum::response::Result<Json<()>> {
@@ -91,7 +93,9 @@ async fn kill_endpoint(State(state): State<Arc<App>>, Json(pid): Json<Pid>) -> a
 }
 
 async fn handle_terminate_endpoint(app: &App, pid: Pid) -> anyhow::Result<()> {
-    app.get_process(&pid).await?.terminate().await
+    let mut processes = app.processes.lock().await;
+    let handle = processes.get_mut(&pid).ok_or(anyhow!("non existant pid"))?;
+    handle.terminate().await
 }
 
 async fn terminate_endpoint(State(state): State<Arc<App>>, Json(pid): Json<Pid>) -> axum::response::Result<Json<()>> {

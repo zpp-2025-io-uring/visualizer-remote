@@ -30,11 +30,11 @@ impl ProcessHandle {
         })
     }
 
-    pub async fn kill(mut self) -> anyhow::Result<()> {
+    pub async fn kill(&mut self) -> anyhow::Result<()> {
         Ok(self.0.kill().await?)
     }
 
-    pub async fn terminate(self) -> anyhow::Result<()> {
+    pub async fn terminate(&mut self) -> anyhow::Result<()> {
         self.kill().await // SIGTERM not available, fallback to SIGKILL
     }
 
