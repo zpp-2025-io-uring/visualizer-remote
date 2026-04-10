@@ -41,12 +41,12 @@ impl App {
     pub async fn add_process(&self, handle: ProcessHandle) -> anyhow::Result<Pid> {
         let pid = self.get_new_pid().await;
         self.processes.lock().await.insert(pid, handle);
-        info!("registered process pid={}", pid);
+        debug!("registered process pid={}", pid);
         Ok(pid)
     }
 
     pub async fn remove_process(&self, pid: &Pid) -> anyhow::Result<ProcessHandle> {
-        info!("removing process pid={}", pid);
+        debug!("removing process pid={}", pid);
         self.processes
             .lock()
             .await

@@ -66,8 +66,7 @@ pub async fn run_io(params: IoParams, binary_path: PathBuf) -> anyhow::Result<Pr
         args.extend_from_slice(&["--async-workers-cpuset", worker_cpuset]);
     }
 
-    info!("launching io_tester binary={}", binary_path.display());
-    info!("launching io_tester with {} args", args.len());
+    info!("launching io_tester binary={} with {:?} args", binary_path.display(), args);
 
     ProcessHandle::start(Command::new(binary_path).args(args)).await
 }
