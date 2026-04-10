@@ -1,4 +1,4 @@
-use std::{pin::Pin, process::{Output, Stdio}};
+use std::{pin::Pin, process::{ExitStatus, Output, Stdio}};
 
 use anyhow::anyhow;
 
@@ -36,5 +36,9 @@ impl ProcessHandle {
 
     pub async fn terminate(self) -> anyhow::Result<()> {
         self.kill().await // SIGTERM not available, fallback to SIGKILL
+    }
+
+    pub async fn poll(&mut self) -> anyhow::Result<ExitStatus> {
+        Ok(self.0.wait().await?)
     }
 }

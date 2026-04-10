@@ -46,6 +46,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/wait_and_output", post(wait_and_output_endpoint))
         .route("/kill", post(kill_endpoint))
         .route("/terminate", post(terminate_endpoint))
+        .route("/poll", post(poll_endpoint))
         .with_state(Arc::new(App::new()));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
@@ -95,6 +96,20 @@ async fn handle_terminate_endpoint(app: &App, pid: Pid) -> anyhow::Result<()> {
 
 async fn terminate_endpoint(State(state): State<Arc<App>>, Json(pid): Json<Pid>) -> axum::response::Result<Json<()>> {
     match handle_terminate_endpoint(&state, pid).await {
+        Ok(output) => Ok(Json(output)),
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into()),
+    }
+}
+
+async fn handle_poll_endpoint(app: &App, pid: Pid) -> anyhow::Result<i32> {
+    let mut processes = app.processes.lock().await;
+    let handle = processes.get_mut(&pid).ok_or(anyhow!("non existant pid"))?;
+    handle.poll().await?.code().ok_or(anyhow!("unknown error code"))
+}
+
+
+async fn poll_endpoint(State(state): State<Arc<App>>, Json(pid): Json<Pid>) -> axum::response::Result<Json<i32>> {
+    match handle_poll_endpoint(&state, pid).await {
         Ok(output) => Ok(Json(output)),
         Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into()),
     }
