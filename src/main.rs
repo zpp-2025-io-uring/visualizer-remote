@@ -2,8 +2,9 @@ mod executor;
 
 use anyhow::anyhow;
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
-use std::{collections::HashMap, net::SocketAddr, sync::Arc};
+use std::{collections::HashMap, net::{IpAddr, SocketAddr}, sync::Arc};
 use tokio::{net::TcpListener, sync::Mutex};
+use clap::Parser;
 
 use crate::executor::{
     cmd::{CmdOutput, ProcessHandle},
@@ -47,9 +48,23 @@ impl App {
     }
 }
 
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Host to listen on.
+    #[arg(long, default_value_t = IpAddr::from([127, 0, 0, 1]))]
+    host: IpAddr,
+
+    /// Port to listen on.
+    #[arg(long, default_value_t = 3000)]
+    port: u16,
+}
+
 // Entry point
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let args = Args::parse();
+
     let app = Router::new()
         .route("/io_tester", post(io_tester_endpoint))
         .route("/rpc_tester", post(rpc_tester_endpoint))
@@ -59,7 +74,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/poll", post(poll_endpoint))
         .with_state(Arc::new(App::new()));
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::new(args.host, args.port);
     let listener = TcpListener::bind(addr).await?;
 
     axum::serve(listener, app).await?;
