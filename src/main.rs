@@ -117,14 +117,14 @@ async fn terminate_endpoint(State(state): State<Arc<App>>, Json(pid): Json<Pid>)
     }
 }
 
-async fn handle_poll_endpoint(app: &App, pid: Pid) -> anyhow::Result<i32> {
+async fn handle_poll_endpoint(app: &App, pid: Pid) -> anyhow::Result<Option<i32>> {
     let mut processes = app.processes.lock().await;
     let handle = processes.get_mut(&pid).ok_or(anyhow!("non existant pid"))?;
-    handle.poll().await?.code().ok_or(anyhow!("unknown error code"))
+    Ok(handle.poll().await?.code())
 }
 
 
-async fn poll_endpoint(State(state): State<Arc<App>>, Json(pid): Json<Pid>) -> axum::response::Result<Json<i32>> {
+async fn poll_endpoint(State(state): State<Arc<App>>, Json(pid): Json<Pid>) -> axum::response::Result<Json<Option<i32>>> {
     match handle_poll_endpoint(&state, pid).await {
         Ok(output) => Ok(Json(output)),
         Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into()),
