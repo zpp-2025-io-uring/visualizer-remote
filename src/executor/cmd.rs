@@ -12,7 +12,7 @@ pub struct ProcessHandle(Child);
 pub struct CmdOutput {
     pub stdout: String,
     pub stderr: String,
-    pub return_code: i32,
+    pub return_code: Option<i32>,
 }
 
 impl ProcessHandle {
@@ -26,7 +26,7 @@ impl ProcessHandle {
         Ok(CmdOutput {
             stdout: output.stdout.try_into()?,
             stderr: output.stderr.try_into()?,
-            return_code: output.status.code().ok_or(anyhow!("Unknown return code"))?,
+            return_code: output.status.code(),
         })
     }
 

@@ -34,7 +34,7 @@ pub async fn run_rpc(params: RpcParams) -> anyhow::Result<ProcessHandle> {
     let mut conf = OpenOptions::new().create(true).write(true).open(&config_path).await?;
     conf.write_all(params.config.as_bytes()).await?;
 
-    let mut args: Vec<&str> = vec!["--conf", config_path.to_str().ok_or(anyhow!("invalid config path"))?, "--storage", "--reactor-backend", &params.backend, "--cpuset", &params.app_cpuset];
+    let mut args: Vec<&str> = vec!["--conf", config_path.to_str().ok_or(anyhow!("invalid config path"))?, "--reactor-backend", &params.backend, "--cpuset", &params.app_cpuset];
 
     if params.is_server {
         args.extend_from_slice(&["--listen", &params.ip_address]);
@@ -47,7 +47,7 @@ pub async fn run_rpc(params: RpcParams) -> anyhow::Result<ProcessHandle> {
     }
 
 
-    let result = ProcessHandle::start(Command::new("/home/jakub/Documents/ZPP/zpp-io-uring/seastar/build/release/apps/io_tester/io_tester").args(args)).await?;
+    let result = ProcessHandle::start(Command::new("/home/jakub/Documents/ZPP/zpp-io-uring/seastar/build/release/apps/rpc_tester/rpc_tester").args(args)).await?;
 
     Ok(result)
 }
