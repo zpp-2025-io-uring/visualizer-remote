@@ -4,6 +4,7 @@ use std::{
 };
 
 use anyhow::anyhow;
+use log::{info, trace};
 use serde::Deserialize;
 use tokio::{
     fs::{OpenOptions, create_dir_all},
@@ -27,13 +28,22 @@ pub struct RpcParams {
 const CONFIG_FILENAME: &str = "conf.yaml";
 
 pub async fn run_rpc(params: RpcParams) -> anyhow::Result<ProcessHandle> {
-    println!("Running with {:?}", params);
+    info!(
+        "starting rpc_tester backend={} mode={} ip={} port={} app_cpuset={}",
+        params.backend,
+        if params.is_server { "server" } else { "client" },
+        params.ip_address,
+        params.port,
+        params.app_cpuset
+    );
     let mut hasher = DefaultHasher::new();
     params.hash(&mut hasher);
     let hash = hasher.finish();
+    trace!("rpc_tester run hash={}", hash);
 
     let work_dir = PathBuf::from(&format!("{}", hash));
     create_dir_all(&work_dir).await?;
+    trace!("rpc_tester work dir={}", work_dir.display());
 
     let config_path = work_dir.join(CONFIG_FILENAME);
 
@@ -57,16 +67,19 @@ pub async fn run_rpc(params: RpcParams) -> anyhow::Result<ProcessHandle> {
     ];
 
     if params.is_server {
+        trace!("rpc_tester listen mode on {}", params.ip_address);
         args.extend_from_slice(&["--listen", &params.ip_address]);
     } else {
+        trace!("rpc_tester connect mode to {}", params.ip_address);
         args.extend_from_slice(&["--connect", &params.ip_address]);
     }
 
     if let Some(ref worker_cpuset) = params.async_worker_cpuset {
+        trace!("rpc_tester async worker cpuset={}", worker_cpuset);
         args.extend_from_slice(&["--async-workers-cpuset", worker_cpuset]);
     }
 
-    let result = ProcessHandle::start(Command::new("rpc_tester").args(args)).await?;
+    info!("launching rpc_tester with {} args", args.len());
 
-    Ok(result)
+    ProcessHandle::start(Command::new("rpc_tester").args(args)).await
 }
