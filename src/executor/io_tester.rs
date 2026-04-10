@@ -40,6 +40,7 @@ pub async fn run_io(params: IoParams) -> anyhow::Result<ProcessHandle> {
 
     let mut conf = OpenOptions::new()
         .create(true)
+        .truncate(true)
         .write(true)
         .open(&config_path)
         .await?;
