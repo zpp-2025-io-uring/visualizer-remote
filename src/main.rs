@@ -3,7 +3,7 @@ mod executor;
 use anyhow::anyhow;
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use log::{error, info, debug};
-use std::{collections::HashMap, net::{IpAddr, SocketAddr}, sync::Arc};
+use std::{collections::HashMap, net::{IpAddr, SocketAddr}, path::PathBuf, sync::Arc};
 use tokio::{net::TcpListener, sync::Mutex};
 use clap::Parser;
 
@@ -18,13 +18,17 @@ type Pid = u64;
 struct App {
     processes: Mutex<HashMap<Pid, ProcessHandle>>,
     index: Mutex<Pid>,
+    rpc_tester_path: PathBuf,
+    io_tester_path: PathBuf,
 }
 
 impl App {
-    pub fn new() -> App {
+    pub fn new(rpc_tester_path: PathBuf, io_tester_path: PathBuf) -> App {
         App {
             processes: Mutex::new(HashMap::new()),
             index: Mutex::new(0),
+            rpc_tester_path,
+            io_tester_path
         }
     }
 
@@ -49,6 +53,14 @@ impl App {
             .remove(pid)
             .ok_or(anyhow!("non existant pid"))
     }
+
+    pub fn rpc_tester_path(&self) -> &PathBuf {
+        &self.rpc_tester_path
+    }
+
+    pub fn io_tester_path(&self) -> &PathBuf {
+        &self.io_tester_path
+    }
 }
 
 #[derive(Parser, Debug)]
@@ -61,6 +73,14 @@ struct Args {
     /// Port to listen on.
     #[arg(long, default_value_t = 3000)]
     port: u16,
+
+    /// Path to the rpc_tester binary
+    #[arg(short, long)]
+    rpc_tester_path: PathBuf,
+
+    /// Path to the io_tester binary
+    #[arg(short, long)]
+    io_tester_path: PathBuf,
 }
 
 // Entry point
@@ -78,7 +98,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/kill", post(kill_endpoint))
         .route("/terminate", post(terminate_endpoint))
         .route("/poll", post(poll_endpoint))
-        .with_state(Arc::new(App::new()));
+        .with_state(Arc::new(App::new(args.rpc_tester_path, args.io_tester_path)));
 
     let addr = SocketAddr::new(args.host, args.port);
     let listener = TcpListener::bind(addr).await?;
@@ -90,7 +110,7 @@ async fn main() -> anyhow::Result<()> {
 }
 
 async fn handle_io_tester_endpoint(app: &App, params: IoParams) -> anyhow::Result<Pid> {
-    app.add_process(run_io(params).await?).await
+    app.add_process(run_io(params, app.io_tester_path().clone()).await?).await
 }
 
 async fn io_tester_endpoint(
@@ -111,7 +131,7 @@ async fn io_tester_endpoint(
 }
 
 async fn handle_rpc_tester_endpoint(app: &App, params: RpcParams) -> anyhow::Result<Pid> {
-    app.add_process(run_rpc(params).await?).await
+    app.add_process(run_rpc(params, app.rpc_tester_path().clone()).await?).await
 }
 
 async fn rpc_tester_endpoint(

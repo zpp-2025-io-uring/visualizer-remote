@@ -27,7 +27,7 @@ pub struct RpcParams {
 
 const CONFIG_FILENAME: &str = "conf.yaml";
 
-pub async fn run_rpc(params: RpcParams) -> anyhow::Result<ProcessHandle> {
+pub async fn run_rpc(params: RpcParams, binary_path: PathBuf) -> anyhow::Result<ProcessHandle> {
     info!(
         "starting rpc_tester backend={} mode={} ip={} port={} app_cpuset={}",
         params.backend,
@@ -79,7 +79,8 @@ pub async fn run_rpc(params: RpcParams) -> anyhow::Result<ProcessHandle> {
         args.extend_from_slice(&["--async-workers-cpuset", worker_cpuset]);
     }
 
+    info!("launching rpc_tester binary={}", binary_path.display());
     info!("launching rpc_tester with {} args", args.len());
 
-    ProcessHandle::start(Command::new("rpc_tester").args(args)).await
+    ProcessHandle::start(Command::new(binary_path).args(args)).await
 }
