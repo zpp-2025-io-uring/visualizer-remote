@@ -1,6 +1,6 @@
 use std::process::{ExitStatus, Stdio};
 
-use log::{error, info, debug};
+use log::{debug, error, info};
 use serde::Serialize;
 use tokio::process::{Child, Command};
 
@@ -17,7 +17,11 @@ pub struct CmdOutput {
 impl ProcessHandle {
     pub async fn start(command: &mut Command) -> anyhow::Result<ProcessHandle> {
         debug!("Running command: {:?}", command);
-        match command.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn() {
+        match command
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
             Ok(child) => {
                 info!("spawned child process pid={:?}", child.id());
                 Ok(ProcessHandle(child))

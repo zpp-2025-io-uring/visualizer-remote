@@ -26,7 +26,10 @@ const CONFIG_FILENAME: &str = "conf.yaml";
 const STORAGE_DIR: &str = "storage";
 
 pub async fn run_io(params: IoParams, binary_path: PathBuf) -> anyhow::Result<ProcessHandle> {
-    info!("starting io_tester backend={} app_cpuset={}", params.backend, params.app_cpuset);
+    info!(
+        "starting io_tester backend={} app_cpuset={}",
+        params.backend, params.app_cpuset
+    );
     let mut hasher = DefaultHasher::new();
     params.hash(&mut hasher);
     let hash = hasher.finish();
@@ -66,7 +69,11 @@ pub async fn run_io(params: IoParams, binary_path: PathBuf) -> anyhow::Result<Pr
         args.extend_from_slice(&["--async-workers-cpuset", worker_cpuset]);
     }
 
-    info!("launching io_tester binary={} with {:?} args", binary_path.display(), args);
+    info!(
+        "launching io_tester binary={} with {:?} args",
+        binary_path.display(),
+        args
+    );
 
     ProcessHandle::start(Command::new(binary_path).args(args)).await
 }
