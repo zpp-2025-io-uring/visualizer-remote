@@ -63,7 +63,7 @@ pub async fn run_rpc(params: RpcParams, binary_path: PathBuf) -> anyhow::Result<
         "--cpuset",
         &params.app_cpuset,
         "--port",
-        &params.port
+        &params.port,
     ];
 
     if params.is_server {
@@ -79,7 +79,11 @@ pub async fn run_rpc(params: RpcParams, binary_path: PathBuf) -> anyhow::Result<
         args.extend_from_slice(&["--async-workers-cpuset", worker_cpuset]);
     }
 
-    info!("launching rpc_tester binary={} with {:?} args", binary_path.display(), args);
+    info!(
+        "launching rpc_tester binary={} with {:?} args",
+        binary_path.display(),
+        args
+    );
 
     ProcessHandle::start(Command::new(binary_path).args(args)).await
 }
