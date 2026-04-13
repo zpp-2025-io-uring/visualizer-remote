@@ -1,4 +1,7 @@
-use std::{pin::Pin, process::{ExitStatus, Stdio}};
+use std::{
+    pin::Pin,
+    process::{ExitStatus, Stdio},
+};
 
 use log::{debug, error, info};
 use serde::Serialize;
@@ -19,7 +22,10 @@ pub struct CmdOutput {
 }
 
 impl ProcessHandle {
-    pub async fn start(command: &mut Command, deleter: Option<Deleter>) -> anyhow::Result<ProcessHandle> {
+    pub async fn start(
+        command: &mut Command,
+        deleter: Option<Deleter>,
+    ) -> anyhow::Result<ProcessHandle> {
         debug!("Running command: {:?}", command);
         match command
             .stdout(Stdio::piped())
@@ -28,7 +34,10 @@ impl ProcessHandle {
         {
             Ok(child) => {
                 info!("spawned child process pid={:?}", child.id());
-                Ok(ProcessHandle { handle: child, deleter })
+                Ok(ProcessHandle {
+                    handle: child,
+                    deleter,
+                })
             }
             Err(e) => {
                 error!("failed to spawn child process: {}", e);

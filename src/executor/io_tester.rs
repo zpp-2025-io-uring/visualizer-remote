@@ -1,6 +1,6 @@
 use std::{
     hash::{DefaultHasher, Hash, Hasher},
-    path::PathBuf
+    path::PathBuf,
 };
 
 use anyhow::anyhow;
@@ -9,7 +9,8 @@ use serde::Deserialize;
 use tokio::{
     fs::{OpenOptions, create_dir_all, remove_dir_all},
     io::AsyncWriteExt,
-    process::Command, time::Instant,
+    process::Command,
+    time::Instant,
 };
 
 use crate::executor::cmd::ProcessHandle;
@@ -76,8 +77,10 @@ pub async fn run_io(params: IoParams, binary_path: PathBuf) -> anyhow::Result<Pr
         args
     );
 
-    let deleter = async move || -> anyhow::Result<()> {
-        Ok(remove_dir_all(work_dir).await?)
-    };    
-    ProcessHandle::start(Command::new(binary_path).args(args), Some(Box::pin(deleter()))).await
+    let deleter = async move || -> anyhow::Result<()> { Ok(remove_dir_all(work_dir).await?) };
+    ProcessHandle::start(
+        Command::new(binary_path).args(args),
+        Some(Box::pin(deleter())),
+    )
+    .await
 }
