@@ -1,6 +1,6 @@
 use std::{
     hash::{DefaultHasher, Hash, Hasher},
-    path::PathBuf,
+    path::PathBuf
 };
 
 use anyhow::anyhow;
@@ -9,7 +9,7 @@ use serde::Deserialize;
 use tokio::{
     fs::{OpenOptions, create_dir_all, remove_dir_all},
     io::AsyncWriteExt,
-    process::Command,
+    process::Command, time::Instant,
 };
 
 use crate::executor::cmd::ProcessHandle;
@@ -32,6 +32,7 @@ pub async fn run_io(params: IoParams, binary_path: PathBuf) -> anyhow::Result<Pr
     );
     let mut hasher = DefaultHasher::new();
     params.hash(&mut hasher);
+    Instant::now().hash(&mut hasher);
     let hash = hasher.finish();
     trace!("io_tester run hash={}", hash);
 

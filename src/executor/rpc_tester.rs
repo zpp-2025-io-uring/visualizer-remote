@@ -9,7 +9,7 @@ use serde::Deserialize;
 use tokio::{
     fs::{OpenOptions, create_dir_all, remove_dir_all},
     io::AsyncWriteExt,
-    process::Command,
+    process::Command, time::Instant,
 };
 
 use crate::executor::cmd::ProcessHandle;
@@ -38,6 +38,7 @@ pub async fn run_rpc(params: RpcParams, binary_path: PathBuf) -> anyhow::Result<
     );
     let mut hasher = DefaultHasher::new();
     params.hash(&mut hasher);
+    Instant::now().hash(&mut hasher);
     let hash = hasher.finish();
     trace!("rpc_tester run hash={}", hash);
 
