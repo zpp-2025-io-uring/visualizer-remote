@@ -1,11 +1,18 @@
-use std::process::{ExitStatus, Stdio};
+use std::{
+    pin::Pin,
+    process::{ExitStatus, Stdio},
+};
 
 use log::{debug, error, info};
 use serde::Serialize;
 use tokio::process::{Child, Command};
 
-#[derive(Debug)]
-pub struct ProcessHandle(Child);
+type Deleter = Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send + Sync + 'static>>;
+
+pub struct ProcessHandle {
+    handle: Child,
+    deleter: Option<Deleter>,
+}
 
 #[derive(Debug, Serialize)]
 pub struct CmdOutput {
@@ -15,7 +22,10 @@ pub struct CmdOutput {
 }
 
 impl ProcessHandle {
-    pub async fn start(command: &mut Command) -> anyhow::Result<ProcessHandle> {
+    pub async fn start(
+        command: &mut Command,
+        deleter: Option<Deleter>,
+    ) -> anyhow::Result<ProcessHandle> {
         debug!("Running command: {:?}", command);
         match command
             .stdout(Stdio::piped())
@@ -24,7 +34,10 @@ impl ProcessHandle {
         {
             Ok(child) => {
                 info!("spawned child process pid={:?}", child.id());
-                Ok(ProcessHandle(child))
+                Ok(ProcessHandle {
+                    handle: child,
+                    deleter,
+                })
             }
             Err(e) => {
                 error!("failed to spawn child process: {}", e);
@@ -34,7 +47,7 @@ impl ProcessHandle {
     }
 
     pub async fn wait(self) -> anyhow::Result<CmdOutput> {
-        let child = self.0;
+        let child = self.handle;
         let pid = child.id();
         info!("waiting for child process pid={:?}", pid);
         let output = child.wait_with_output().await?;
@@ -47,6 +60,10 @@ impl ProcessHandle {
             output.stderr.len()
         );
 
+        if let Some(deleter) = self.deleter {
+            deleter.await?;
+        }
+
         Ok(CmdOutput {
             stdout: output.stdout.try_into()?,
             stderr: output.stderr.try_into()?,
@@ -55,17 +72,17 @@ impl ProcessHandle {
     }
 
     pub async fn kill(&mut self) -> anyhow::Result<()> {
-        info!("killing child process pid={:?}", self.0.id());
-        Ok(self.0.kill().await?)
+        info!("killing child process pid={:?}", self.handle.id());
+        Ok(self.handle.kill().await?)
     }
 
     pub async fn terminate(&mut self) -> anyhow::Result<()> {
-        info!("terminating child process pid={:?}", self.0.id());
+        info!("terminating child process pid={:?}", self.handle.id());
         self.kill().await // SIGTERM not available, fallback to SIGKILL
     }
 
     pub async fn poll(&mut self) -> anyhow::Result<ExitStatus> {
-        info!("polling child process pid={:?}", self.0.id());
-        Ok(self.0.wait().await?)
+        info!("polling child process pid={:?}", self.handle.id());
+        Ok(self.handle.wait().await?)
     }
 }

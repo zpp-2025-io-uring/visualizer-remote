@@ -7,9 +7,10 @@ use anyhow::anyhow;
 use log::{info, trace};
 use serde::Deserialize;
 use tokio::{
-    fs::{OpenOptions, create_dir_all},
+    fs::{OpenOptions, create_dir_all, remove_dir_all},
     io::AsyncWriteExt,
     process::Command,
+    time::Instant,
 };
 
 use crate::executor::cmd::ProcessHandle;
@@ -38,6 +39,7 @@ pub async fn run_rpc(params: RpcParams, binary_path: PathBuf) -> anyhow::Result<
     );
     let mut hasher = DefaultHasher::new();
     params.hash(&mut hasher);
+    Instant::now().hash(&mut hasher);
     let hash = hasher.finish();
     trace!("rpc_tester run hash={}", hash);
 
@@ -85,5 +87,10 @@ pub async fn run_rpc(params: RpcParams, binary_path: PathBuf) -> anyhow::Result<
         args
     );
 
-    ProcessHandle::start(Command::new(binary_path).args(args)).await
+    let deleter = async move || -> anyhow::Result<()> { Ok(remove_dir_all(work_dir).await?) };
+    ProcessHandle::start(
+        Command::new(binary_path).args(args),
+        Some(Box::pin(deleter())),
+    )
+    .await
 }
