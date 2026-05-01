@@ -1,4 +1,5 @@
 use std::{
+    collections::BTreeMap,
     hash::{DefaultHasher, Hash, Hasher},
     path::PathBuf,
 };
@@ -18,25 +19,14 @@ use crate::executor::cmd::ProcessHandle;
 #[derive(Debug, Hash, Deserialize)]
 pub struct RpcParams {
     config: String,
-    backend: String,
-    ip_address: String,
-    port: String,
-    is_server: bool,
-    app_cpuset: String,
-    async_worker_cpuset: Option<String>,
+    #[serde(flatten)]
+    opts: BTreeMap<String, String>,
 }
 
 const CONFIG_FILENAME: &str = "conf.yaml";
 
 pub async fn run_rpc(params: RpcParams, binary_path: PathBuf) -> anyhow::Result<ProcessHandle> {
-    info!(
-        "starting rpc_tester backend={} mode={} ip={} port={} app_cpuset={}",
-        params.backend,
-        if params.is_server { "server" } else { "client" },
-        params.ip_address,
-        params.port,
-        params.app_cpuset
-    );
+    info!("starting rpc_tester opts={:?}", params.opts);
     let mut hasher = DefaultHasher::new();
     params.hash(&mut hasher);
     Instant::now().hash(&mut hasher);
@@ -60,26 +50,15 @@ pub async fn run_rpc(params: RpcParams, binary_path: PathBuf) -> anyhow::Result<
     let mut args: Vec<&str> = vec![
         "--conf",
         config_path.to_str().ok_or(anyhow!("invalid config path"))?,
-        "--reactor-backend",
-        &params.backend,
-        "--cpuset",
-        &params.app_cpuset,
-        "--port",
-        &params.port,
     ];
 
-    if params.is_server {
-        trace!("rpc_tester listen mode on {}", params.ip_address);
-        args.extend_from_slice(&["--listen", &params.ip_address]);
-    } else {
-        trace!("rpc_tester connect mode to {}", params.ip_address);
-        args.extend_from_slice(&["--connect", &params.ip_address]);
-    }
-
-    if let Some(ref worker_cpuset) = params.async_worker_cpuset {
-        trace!("rpc_tester async worker cpuset={}", worker_cpuset);
-        args.extend_from_slice(&["--async-workers-cpuset", worker_cpuset]);
-    }
+    let opts = params
+        .opts
+        .iter()
+        .map(|(k, v)| [k, v])
+        .flatten()
+        .map(String::as_str);
+    args.extend(opts);
 
     info!(
         "launching rpc_tester binary={} with {:?} args",
