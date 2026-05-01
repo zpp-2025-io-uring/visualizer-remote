@@ -1,5 +1,4 @@
 use std::{
-    collections::BTreeMap,
     hash::{DefaultHasher, Hash, Hasher},
     path::PathBuf,
 };
@@ -19,15 +18,14 @@ use crate::executor::cmd::ProcessHandle;
 #[derive(Debug, Hash, Deserialize)]
 pub struct IoParams {
     config: String,
-    #[serde(flatten)]
-    opts: BTreeMap<String, String>,
+    argv: Vec<String>,
 }
 
 const CONFIG_FILENAME: &str = "conf.yaml";
 const STORAGE_DIR: &str = "storage";
 
 pub async fn run_io(params: IoParams, binary_path: PathBuf) -> anyhow::Result<ProcessHandle> {
-    info!("starting io_tester opts={:?}", params.opts);
+    info!("starting io_tester argv={:?}", params.argv);
     let mut hasher = DefaultHasher::new();
     params.hash(&mut hasher);
     Instant::now().hash(&mut hasher);
@@ -57,12 +55,7 @@ pub async fn run_io(params: IoParams, binary_path: PathBuf) -> anyhow::Result<Pr
         config_path.to_str().ok_or(anyhow!("invalid config path"))?,
     ];
 
-    let opts = params
-        .opts
-        .iter()
-        .flat_map(|(k, v)| [k, v])
-        .map(String::as_str);
-    args.extend(opts);
+    args.extend(params.argv.iter().map(String::as_str));
 
     info!(
         "launching io_tester binary={} with {:?} args",

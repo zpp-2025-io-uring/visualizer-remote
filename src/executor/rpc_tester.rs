@@ -1,5 +1,4 @@
 use std::{
-    collections::BTreeMap,
     hash::{DefaultHasher, Hash, Hasher},
     path::PathBuf,
 };
@@ -19,14 +18,13 @@ use crate::executor::cmd::ProcessHandle;
 #[derive(Debug, Hash, Deserialize)]
 pub struct RpcParams {
     config: String,
-    #[serde(flatten)]
-    opts: BTreeMap<String, String>,
+    argv: Vec<String>,
 }
 
 const CONFIG_FILENAME: &str = "conf.yaml";
 
 pub async fn run_rpc(params: RpcParams, binary_path: PathBuf) -> anyhow::Result<ProcessHandle> {
-    info!("starting rpc_tester opts={:?}", params.opts);
+    info!("starting rpc_tester argv={:?}", params.argv);
     let mut hasher = DefaultHasher::new();
     params.hash(&mut hasher);
     Instant::now().hash(&mut hasher);
@@ -52,12 +50,7 @@ pub async fn run_rpc(params: RpcParams, binary_path: PathBuf) -> anyhow::Result<
         config_path.to_str().ok_or(anyhow!("invalid config path"))?,
     ];
 
-    let opts = params
-        .opts
-        .iter()
-        .flat_map(|(k, v)| [k, v])
-        .map(String::as_str);
-    args.extend(opts);
+    args.extend(params.argv.iter().map(String::as_str));
 
     info!(
         "launching rpc_tester binary={} with {:?} args",
