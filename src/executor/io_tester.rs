@@ -60,8 +60,7 @@ pub async fn run_io(params: IoParams, binary_path: PathBuf) -> anyhow::Result<Pr
     let opts = params
         .opts
         .iter()
-        .map(|(k, v)| [k, v])
-        .flatten()
+        .flat_map(|(k, v)| [k, v])
         .map(String::as_str);
     args.extend(opts);
 

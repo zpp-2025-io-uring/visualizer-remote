@@ -55,8 +55,7 @@ pub async fn run_rpc(params: RpcParams, binary_path: PathBuf) -> anyhow::Result<
     let opts = params
         .opts
         .iter()
-        .map(|(k, v)| [k, v])
-        .flatten()
+        .flat_map(|(k, v)| [k, v])
         .map(String::as_str);
     args.extend(opts);
 
