@@ -18,19 +18,14 @@ use crate::executor::cmd::ProcessHandle;
 #[derive(Debug, Hash, Deserialize)]
 pub struct IoParams {
     config: String,
-    backend: String,
-    app_cpuset: String,
-    async_worker_cpuset: Option<String>,
+    argv: Vec<String>,
 }
 
 const CONFIG_FILENAME: &str = "conf.yaml";
 const STORAGE_DIR: &str = "storage";
 
 pub async fn run_io(params: IoParams, binary_path: PathBuf) -> anyhow::Result<ProcessHandle> {
-    info!(
-        "starting io_tester backend={} app_cpuset={}",
-        params.backend, params.app_cpuset
-    );
+    info!("starting io_tester argv={:?}", params.argv);
     let mut hasher = DefaultHasher::new();
     params.hash(&mut hasher);
     Instant::now().hash(&mut hasher);
@@ -58,18 +53,9 @@ pub async fn run_io(params: IoParams, binary_path: PathBuf) -> anyhow::Result<Pr
     let mut args: Vec<&str> = vec![
         "--conf",
         config_path.to_str().ok_or(anyhow!("invalid config path"))?,
-        "--storage",
-        storage_dir.to_str().ok_or(anyhow!("invalid storage dir"))?,
-        "--reactor-backend",
-        &params.backend,
-        "--cpuset",
-        &params.app_cpuset,
     ];
 
-    if let Some(ref worker_cpuset) = params.async_worker_cpuset {
-        trace!("io_tester async worker cpuset={}", worker_cpuset);
-        args.extend_from_slice(&["--async-workers-cpuset", worker_cpuset]);
-    }
+    args.extend(params.argv.iter().map(String::as_str));
 
     info!(
         "launching io_tester binary={} with {:?} args",
